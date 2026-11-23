@@ -1,0 +1,23 @@
+name: Container security scan
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    permissions:
+      contents: read
+      security-events: write
+    uses: example/security-workflows/.github/workflows/container-scan.yml@REPLACE_WITH_FULL_COMMIT_SHA
+    with:
+      # Every value here must be declared under workflow_call.inputs by the reusable workflow.
+      image-name: example-product
+      image-tag: scan
+      trivy-version: "REPLACE_WITH_TRIVY_VERSION"
+      grype-version: "REPLACE_WITH_GRYPE_VERSION"
+      upload-sarif: true
