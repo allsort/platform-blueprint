@@ -30,6 +30,8 @@ def check_links(path: Path, text: str) -> list[str]:
     targets = INLINE_LINK.findall(text) + REFERENCE_LINK.findall(text)
     for raw_target in targets:
         target = raw_target.strip()
+        if not target:
+            continue
         if target.startswith("<") and ">" in target:
             target = target[1 : target.index(">")]
         else:

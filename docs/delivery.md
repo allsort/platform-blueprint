@@ -33,8 +33,8 @@ flowchart LR
 - The candidate starts with its production runtime identity and filesystem
   restrictions.
 - Health checks pass and expected routes return the correct status.
-- A migration is either backward compatible or paired with an explicit rollback
-  decision.
+- Every migration remains backward compatible with the previous application
+  release for the full rollback window.
 
 ### After cutover
 
@@ -51,7 +51,8 @@ Rollback is a first-class release operation, not an improvised response.
 - Operators select a known release identifier rather than an arbitrary path.
 - The rollback process validates the target before changing traffic.
 - The previous release remains available for a bounded retention window.
-- Data migrations document whether application rollback is safe.
+- Data migrations preserve application rollback safety until the previous
+  release leaves the retention window.
 
 ## Evidence
 
