@@ -4,6 +4,8 @@ services:
     read_only: true
     init: true
     restart: unless-stopped
+    mem_limit: 512m
+    cpus: "1.0"
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -21,6 +23,7 @@ services:
       retries: 3
       start_period: 20s
     deploy:
+      # These limits apply to Swarm; mem_limit and cpus above cover plain Compose.
       resources:
         limits:
           cpus: "1.0"

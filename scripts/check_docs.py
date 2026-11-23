@@ -9,8 +9,11 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-MARKDOWN_LINK = re.compile(r"\[[^]]+\]\(([^)]+)\)")
+INLINE_LINK = re.compile(r"!?\[[^]]*\]\(([^)]+)\)")
+REFERENCE_LINK = re.compile(r"^\s*\[[^]]+\]:\s*(\S+)", re.MULTILINE)
+FENCED_CODE = re.compile(r"(?:^|\n)(?:```|~~~).*?(?:\n(?:```|~~~)\s*(?=\n|$))", re.DOTALL)
 PRIVATE_KEY = re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")
+MAX_SCAN_BYTES = 1_000_000
 PLACEHOLDER_FILES = {
     ROOT / "examples" / "compose" / "secure-service.yml",
     ROOT / "examples" / "workflows" / "container-scan-caller.yml",
@@ -23,7 +26,14 @@ def markdown_files() -> list[Path]:
 
 def check_links(path: Path, text: str) -> list[str]:
     problems: list[str] = []
-    for target in MARKDOWN_LINK.findall(text):
+    text = FENCED_CODE.sub("\n", text)
+    targets = INLINE_LINK.findall(text) + REFERENCE_LINK.findall(text)
+    for raw_target in targets:
+        target = raw_target.strip()
+        if target.startswith("<") and ">" in target:
+            target = target[1 : target.index(">")]
+        else:
+            target = target.split(maxsplit=1)[0]
         if target.startswith(("http://", "https://", "mailto:", "#")):
             continue
         clean = target.split("#", 1)[0]
@@ -44,10 +54,13 @@ def main() -> int:
     problems: list[str] = []
     scanned = 0
     for path in sorted(p for p in ROOT.rglob("*") if p.is_file() and ".git" not in p.parts):
-        if path.suffix.lower() not in {".md", ".py", ".yml", ".yaml"}:
+        if path.stat().st_size > MAX_SCAN_BYTES:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
             continue
         scanned += 1
-        text = path.read_text(encoding="utf-8")
         if PRIVATE_KEY.search(text):
             problems.append(f"{path.relative_to(ROOT)}: private-key material detected")
         if path.suffix.lower() == ".md":
